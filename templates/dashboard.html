@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard | Smart Return{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <p class="eyebrow">Operations overview</p>
+        <h2>Dashboard</h2>
+    </div>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <span class="label">Customers</span>
+        <strong>{{ summary.customers }}</strong>
+    </div>
+    <div class="stat-card">
+        <span class="label">Support Staff</span>
+        <strong>{{ summary.support_staff }}</strong>
+    </div>
+    <div class="stat-card">
+        <span class="label">Products</span>
+        <strong>{{ summary.products }}</strong>
+    </div>
+    <div class="stat-card">
+        <span class="label">Returns</span>
+        <strong>{{ summary.return_requests }}</strong>
+    </div>
+    <div class="stat-card">
+        <span class="label">Complaints</span>
+        <strong>{{ summary.complaints }}</strong>
+    </div>
+    <div class="stat-card">
+        <span class="label">Refunds</span>
+        <strong>{{ summary.refunds }}</strong>
+    </div>
+</div>
+
+<div class="row g-4 mt-2">
+    <div class="col-lg-7">
+        <div class="panel-card">
+            <div class="panel-header">
+                <h4>Recent activity</h4>
+            </div>
+            <div class="list-group list-group-flush">
+                {% for item in recent_returns %}
+                <div class="list-group-item d-flex justify-content-between align-items-center">
+                    <span>Return #{{ item.id }} • {{ item.reason }}</span>
+                    <span class="status-pill status-{{ item.status.lower() | replace(' ', '-') }}">{{ item.status }}</span>
+                </div>
+                {% else %}
+                <div class="list-group-item empty-state">No recent returns available.</div>
+                {% endfor %}
+
+                {% for item in recent_complaints %}
+                <div class="list-group-item d-flex justify-content-between align-items-center">
+                    <span>Complaint #{{ item.id }} • {{ item.category }}</span>
+                    <span class="status-pill status-{{ item.status.lower() | replace(' ', '-') }}">{{ item.status }}</span>
+                </div>
+                {% else %}
+                <div class="list-group-item empty-state">No recent complaints available.</div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+<!--  
+    <div class="col-lg-5">
+        <div class="panel-card">
+            <div class="panel-header">
+                <h4>Database health</h4>
+            </div>
+            <div class="db-status-grid">
+                <div class="db-status-item">
+                    <span>MySQL</span>
+                    <strong class="text-success">{{ 'Connected' if db_status.mysql else 'Offline' }}</strong>
+                </div>
+                <div class="db-status-item">
+                    <span>MongoDB</span>
+                    <strong class="text-warning">{{ 'Connected' if db_status.mongodb else 'Offline' }}</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+    -->
+</div>
+{% endblock %}

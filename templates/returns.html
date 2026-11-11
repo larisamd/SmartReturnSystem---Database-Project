@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+{% block title %}Returns | Smart Return{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <p class="eyebrow">Return workflow</p>
+        <h2>Returns</h2>
+    </div>
+    {% if session.get('user_role') in ['Support Staff', 'Administrator'] %}
+    <a class="btn btn-sm btn-outline-success" href="{{ url_for('export_returns_csv') }}">Export CSV</a>
+    {% endif %}
+</div>
+
+{% if session.get('user_role') == 'Customer' %}
+<div class="panel-card form-panel">
+    <h4>Submit a return request</h4>
+    <form method="post">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label for="order_item_id">Order item ID</label>
+                <input class="form-control" type="number" id="order_item_id" name="order_item_id" min="1" placeholder="Enter the item ID from your order" required>
+            </div>
+            <div class="col-md-8">
+                <label for="reason">Reason</label>
+                <input class="form-control" type="text" id="reason" name="reason" placeholder="Describe the reason for your return" required>
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary mt-3">Submit Request</button>
+    </form>
+</div>
+{% endif %}
+
+<div class="table-card mt-4">
+    <table class="table table-dark table-hover align-middle">
+        <thead>
+            <tr>
+                <th>ID</th>
+                {% if session.get('user_role') != 'Customer' %}<th>Customer</th>{% endif %}
+                <th>Order Item</th>
+                {% if session.get('user_role') != 'Customer' %}<th>Product / Order</th>{% endif %}
+                <th>Reason</th>
+                <th>Status</th>
+                {% if session.get('user_role') != 'Customer' %}<th>Refund</th>{% endif %}
+                <th>Created</th>
+                {% if session.get('user_role') in ['Support Staff', 'Administrator'] %}<th>Actions</th>{% endif %}
+            </tr>
+        </thead>
+        <tbody>
+        {% for item in returns %}
+            <tr>
+                <td>#{{ item.id }}</td>
+                {% if session.get('user_role') != 'Customer' %}<td>{{ item.customer_name|default('Customer #' ~ item.customer_id) }}</td>{% endif %}
+                <td>{{ item.order_item_id }}</td>
+                {% if session.get('user_role') != 'Customer' %}<td>{{ item.product_name|default('Order #' ~ item.order_id) }}</td>{% endif %}
+                <td>{{ item.reason }}</td>
+                <td><span class="status-pill status-{{ item.status.lower() | replace(' ', '-') }}">{{ item.status }}</span></td>
+                {% if session.get('user_role') != 'Customer' %}
+                <td>{% if item.amount is defined %}${{ '%.2f' % item.amount }}{% endif %} {{ item.refund_status|default('') }}</td>
+                {% endif %}
+                <td>{{ item.created_at }}</td>
+                {% if session.get('user_role') in ['Support Staff', 'Administrator'] %}
+                <td>
+                    {% if item.status == 'Pending' %}
+                    <form method="post" action="{{ url_for('return_decision', return_id=item.id) }}" class="action-form">
+                        <button class="btn btn-sm btn-outline-success" type="submit" name="decision" value="Approved">Approve & Refund</button>
+                        <button class="btn btn-sm btn-outline-danger" type="submit" name="decision" value="Rejected">Reject</button>
+                    </form>
+                    {% else %}<small>No action available</small>{% endif %}
+                </td>
+                {% endif %}
+            </tr>
+        {% else %}
+            <tr><td colspan="{{ 9 if session.get('user_role') != 'Customer' else 5 }}" class="empty-state">No return requests in this view.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

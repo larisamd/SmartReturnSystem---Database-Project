@@ -1,0 +1,143 @@
+{% extends 'base.html' %}
+{% block title %}Complaints | Smart Return{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <p class="eyebrow">Customer care</p>
+        <h2>Complaints</h2>
+    </div>
+    {% if role in ['Support Staff', 'Administrator'] %}
+    <a class="btn btn-sm btn-outline-success" href="{{ url_for('export_complaints_csv') }}">Export CSV</a>
+    {% endif %}
+</div>
+
+{% if role == 'Customer' %}
+<div class="panel-card form-panel">
+    <h4>Log a complaint</h4>
+    <form method="post">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label for="product_id">Product</label>
+                <select class="form-control" id="product_id" name="product_id" required>
+                    <option value="" selected disabled>Select a product</option>
+                    {% for product in products %}
+                    <option value="{{ product.id }}">{{ product.name }} (ID {{ product.id }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label for="category">Category</label>
+                <select class="form-control" id="category" name="category">
+                    <option>Product Quality</option>
+                    <option>Delivery Issue</option>
+                    <option>Shipping Delay</option>
+                    <option>Returns Support</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label for="evidence">Evidence</label>
+                <input class="form-control" type="text" id="evidence" name="evidence" placeholder="Photo / ticket / note">
+            </div>
+            {% if followup_candidates %}
+            <div class="col-12">
+                <label for="parent_complaint_id">Follow-up to an older closed complaint (optional)</label>
+                <select class="form-control" id="parent_complaint_id" name="parent_complaint_id">
+                    <option value="">New complaint, not a follow-up</option>
+                    {% for parent in followup_candidates %}
+                    <option value="{{ parent.id }}">Complaint #{{ parent.id }} - {{ parent.product_name }} / {{ parent.category }} (closed {{ parent.closed_at }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
+            <div class="col-12">
+                <label for="description">Detailed description</label>
+                <textarea class="form-control" id="description" name="description" rows="4" required></textarea>
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary mt-3">Submit Complaint</button>
+    </form>
+</div>
+{% endif %}
+
+<div class="table-card mt-4">
+    <table class="table table-dark table-hover align-middle">
+        <thead>
+            <tr>
+                <th>ID</th>
+                {% if role != 'Customer' %}<th>Customer</th>{% endif %}
+                <th>Product</th>
+                <th>Category</th>
+                <th>Details</th>
+                <th>Status</th>
+                <th>Created</th>
+                {% if role != 'Customer' %}<th>Actions</th>{% endif %}
+            </tr>
+        </thead>
+        <tbody>
+        {% for item in complaints %}
+            <tr>
+                <td>#{{ item.id }}</td>
+                {% if role != 'Customer' %}<td>{{ item.customer_name|default('Customer #' ~ item.customer_id) }}</td>{% endif %}
+                <td>{{ item.product_name|default('Product #' ~ item.product_id) }}</td>
+                <td>{{ item.category }}</td>
+                <td>
+                    <div>{{ item.description|default('No description document found.') }}</div>
+                    {% if item.parent_complaint_id %}<small class="text-muted">Follow-up to complaint #{{ item.parent_complaint_id }}</small>{% endif %}
+                    {% if item.evidence and item.evidence.get('source') %}<small class="text-muted">Evidence: {{ item.evidence.get('source') }}</small>{% endif %}
+                    <div class="response-thread">
+                        {% for response in responses.get(item.id, []) %}
+                        <div class="response-entry"><strong>{{ response.author_name }}</strong> <small>{{ response.author_role }} · {{ response.created_at }}</small><br>{{ response.message }}</div>
+                        {% endfor %}
+                        {% if role == 'Customer' and item.status == 'Closed' %}
+                            {% if item.can_reopen %}
+                            <form method="post" action="{{ url_for('complaint_reopen', complaint_id=item.id) }}" class="response-form">
+                                <input class="form-control form-control-sm" name="reason" maxlength="1000" placeholder="Why should this complaint be reopened?" required>
+                                <button class="btn btn-sm btn-outline-success" type="submit">Reopen</button>
+                            </form>
+                            <small class="text-muted">You can reopen this complaint within 7 days of closure.</small>
+                            {% else %}
+                            <small class="text-muted">This complaint is closed. Submit a linked follow-up using the form above.</small>
+                            {% endif %}
+                        {% elif role in ['Customer', 'Support Staff', 'Administrator'] and item.status != 'Closed' %}
+                        <form method="post" action="{{ url_for('complaint_response', complaint_id=item.id) }}" class="response-form ajax-response-form">
+                            <input class="form-control form-control-sm" name="message" maxlength="2000" placeholder="{% if role == 'Customer' and item.status == 'Resolved' %}Reply to reopen this resolved complaint{% else %}Write a response{% endif %}" required>
+                            <button class="btn btn-sm btn-outline-success" type="submit">Send</button>
+                            <div class="response-feedback" role="status" aria-live="polite"></div>
+                        </form>
+                        {% endif %}
+                    </div>
+                </td>
+                <td><span class="status-pill status-{{ item.status.lower() | replace(' ', '-') }}">{{ item.status }}</span></td>
+                <td>{{ item.created_at }}</td>
+                {% if role != 'Customer' %}
+                <td class="workflow-actions">
+                    {% if role == 'Administrator' %}
+                    <form method="post" action="{{ url_for('complaint_assignment', complaint_id=item.id) }}" class="action-form">
+                        <select class="form-control form-control-sm" name="staff_id" required>
+                            <option value="" disabled {% if not item.assigned_staff_id %}selected{% endif %}>Assign staff</option>
+                            {% for staff in support_staff %}
+                            <option value="{{ staff.id }}" {% if item.assigned_staff_id == staff.id %}selected{% endif %}>{{ staff.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <button class="btn btn-sm btn-outline-success" type="submit">Assign</button>
+                    </form>
+                    {% endif %}
+                    <form method="post" action="{{ url_for('complaint_status', complaint_id=item.id) }}" class="action-form">
+                        <select class="form-control form-control-sm" name="status" aria-label="Complaint status">
+                            {% for status in ['Open', 'In Progress', 'Resolved', 'Closed', 'Escalated'] %}
+                            <option value="{{ status }}" {% if item.status == status %}selected{% endif %}>{{ status }}</option>
+                            {% endfor %}
+                        </select>
+                        <button class="btn btn-sm btn-outline-success" type="submit">Update</button>
+                    </form>
+                </td>
+                {% endif %}
+            </tr>
+        {% else %}
+            <tr><td colspan="{{ 7 if role != 'Customer' else 6 }}" class="empty-state">No complaints in this view.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

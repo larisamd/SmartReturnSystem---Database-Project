@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% block title %}Products | Smart Return{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <p class="eyebrow">Catalog</p>
+        <h2>Products</h2>
+    </div>
+</div>
+
+<div class="table-card">
+    <table class="table table-dark table-hover align-middle">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Category</th>
+                <th>Description</th>
+                <th>Price</th>
+                <th>Availability</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for product in products %}
+            <tr>
+                <td>{{ product.id }}</td>
+                <td>{{ product.name }}</td>
+                <td>{{ product.category }}</td>
+                <td>{{ product.description }}</td>
+                <td>${{ '%.2f' % product.price }}</td>
+                <td>
+                    {% if product.availability %}
+                    <span class="status-pill status-available">Available</span>
+                    {% else %}
+                    <span class="status-pill status-unavailable">Unavailable</span>
+                    {% endif %}
+                </td>
+            </tr>
+        {% else %}
+            <tr><td colspan="6" class="empty-state">No products found.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

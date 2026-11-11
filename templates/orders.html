@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block title %}Orders | Smart Return{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <p class="eyebrow">Order history</p>
+        <h2>My Orders</h2>
+    </div>
+</div>
+
+<div class="table-card">
+    <table class="table table-dark table-hover align-middle">
+        <thead>
+            <tr>
+                <th>Order ID</th>
+                <th>Order Item IDs</th>
+                <th>Date</th>
+                <th>Status</th>
+                <th>Total</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for order in orders %}
+            <tr>
+                <td>#{{ order.id }}</td>
+                <td>{{ order.item_ids or '-' }}</td>
+                <td>{{ order.order_date }}</td>
+                <td><span class="status-pill status-{{ order.status.lower() | replace(' ', '-') }}">{{ order.status }}</span></td>
+                <td>${{ '%.2f' % order.total }}</td>
+            </tr>
+        {% else %}
+            <tr><td colspan="5" class="empty-state">No orders available.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

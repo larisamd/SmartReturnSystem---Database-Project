@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% block title %}Admin Panel | Smart Return{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <p class="eyebrow">Administrator panel</p>
+        <h2>System Controls</h2>
+    </div>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <span class="label">MySQL</span>
+        <strong>{{ 'Online' if db_status.mysql else 'Offline' }}</strong>
+    </div>
+    <div class="stat-card">
+        <span class="label">MongoDB</span>
+        <strong>{{ 'Online' if db_status.mongodb else 'Offline' }}</strong>
+    </div>
+    <div class="stat-card">
+        <span class="label">Complaints</span>
+        <strong>{{ summary.complaints }}</strong>
+    </div>
+    <div class="stat-card">
+        <span class="label">Return Requests</span>
+        <strong>{{ summary.return_requests }}</strong>
+    </div>
+    <div class="stat-card">
+        <span class="label">Refunds</span>
+        <strong>{{ summary.refunds }}</strong>
+    </div>
+</div>
+
+<div class="queue-shortcuts">
+    <a class="panel-card queue-shortcut" href="{{ url_for('complaints') }}"><span>Complaint Queue</span><strong>Review, assign, respond, and update status</strong></a>
+    <a class="panel-card queue-shortcut" href="{{ url_for('returns') }}"><span>Return Queue</span><strong>Review returns and process eligible refunds</strong></a>
+</div>
+
+<div class="table-card mt-4">
+    <h4>User access</h4>
+    <table class="table table-dark table-hover align-middle">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Role</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for user in users %}
+            <tr>
+                <td>{{ user.name }}</td>
+                <td>{{ user.email }}</td>
+                <td><span class="status-pill status-admin">{{ user.role }}</span></td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
